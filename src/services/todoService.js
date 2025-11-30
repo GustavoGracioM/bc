@@ -1,51 +1,111 @@
-const models = require('../../db/models/index.js')
-
-
-const { Todo } = models
+const pool = require('../db'); // ajuste o caminho se necessário
 
 const service = {
+
+  // =====================================
+  // PEGAR A PRÓXIMA POSIÇÃO
+  // =====================================
   async getNextPosition() {
-    const max = await Todo.max('position');
+    const result = await pool.query(`SELECT MAX(position) AS max FROM todo`);
+    const max = result.rows[0].max;
     return (max || 0) + 1;
   },
 
+  // =====================================
+  // CREATE
+  // =====================================
   async create({ description, data }) {
     const position = await this.getNextPosition();
-    const post = await Todo.create({ description, data, check: false, position });
-    return post;
+
+    const result = await pool.query(
+      `INSERT INTO todo (description, data, check, position)
+       VALUES ($1, $2, $3, $4)
+       RETURNING *`,
+      [description, data, false, position]
+    );
+
+    return result.rows[0];
   },
 
+  // =====================================
+  // FIND ALL
+  // =====================================
   async findAll() {
-    return await Todo.findAll({
-      order: [['position', 'ASC']]
-    });
+    const result = await pool.query(
+      `SELECT *
+       FROM todo
+       ORDER BY position ASC`
+    );
+
+    return result.rows;
   },
 
+  // =====================================
+  // FIND BY ID
+  // =====================================
   async findByPk(id) {
-    return await Todo.findByPk(id)
+    const result = await pool.query(
+      `SELECT *
+       FROM todo
+       WHERE id = $1`,
+      [id]
+    );
+
+    return result.rows[0] || null;
   },
 
+  // =====================================
+  // DELETE
+  // =====================================
   async deleteById(id) {
-    const todo = await Todo.findByPk(Number(id));
-    if (!todo) throw new Error('ToDo não encontrado');
-    await Todo.destroy({ where: { id: Number(id) } });
+    const check = await pool.query(
+      `SELECT id FROM todo WHERE id = $1`,
+      [id]
+    );
+
+    if (check.rows.length === 0) {
+      throw new Error('ToDo não encontrado');
+    }
+
+    await pool.query(
+      `DELETE FROM todo WHERE id = $1`,
+      [id]
+    );
   },
+
+  // =====================================
+  // UPDATE
+  // =====================================
   async updateById(id, { description, data, check, position }) {
-    const todo = await Todo.findByPk(id);
-    if (!todo) throw new Error('ToDo não encontrado');
+    const exists = await pool.query(
+      `SELECT * FROM todo WHERE id = $1`,
+      [id]
+    );
 
-  // Faz a atualização dos campos enviados (parciais ou completos)
-  await todo.update({
-    description: description !== undefined ? description : todo.description,
-    data: data !== undefined ? data : todo.data,
-    check: check !== undefined ? check : todo.check,
-    position: position !== undefined ? position : todo.position
-  });
+    if (exists.rows.length === 0) {
+      throw new Error('ToDo não encontrado');
+    }
 
-  return todo;
-}
-}
+    // Atualiza apenas os campos enviados
+    const updated = await pool.query(
+      `UPDATE todo SET
+          description = COALESCE($2, description),
+          data = COALESCE($3, data),
+          check = COALESCE($4, check),
+          position = COALESCE($5, position)
+       WHERE id = $1
+       RETURNING *`,
+      [
+        id,
+        description ?? null,
+        data ?? null,
+        check ?? null,
+        position ?? null,
+      ]
+    );
 
-
+    return updated.rows[0];
+  },
+};
 
 module.exports = service;
