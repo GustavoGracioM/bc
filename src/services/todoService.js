@@ -18,7 +18,7 @@ const service = {
     const position = await this.getNextPosition();
 
     const result = await pool.query(
-      `INSERT INTO todo (description, data, check, position)
+      `INSERT INTO todo (description, data, done, position)
        VALUES ($1, $2, $3, $4)
        RETURNING *`,
       [description, data, false, position]
@@ -58,12 +58,12 @@ const service = {
   // DELETE
   // =====================================
   async deleteById(id) {
-    const check = await pool.query(
+    const done = await pool.query(
       `SELECT id FROM todo WHERE id = $1`,
       [id]
     );
 
-    if (check.rows.length === 0) {
+    if (done.rows.length === 0) {
       throw new Error('ToDo não encontrado');
     }
 
@@ -76,7 +76,7 @@ const service = {
   // =====================================
   // UPDATE
   // =====================================
-  async updateById(id, { description, data, check, position }) {
+  async updateById(id, { description, data, done, position }) {
     const exists = await pool.query(
       `SELECT * FROM todo WHERE id = $1`,
       [id]
@@ -91,7 +91,7 @@ const service = {
       `UPDATE todo SET
           description = COALESCE($2, description),
           data = COALESCE($3, data),
-          check = COALESCE($4, check),
+          done = COALESCE($4, done),
           position = COALESCE($5, position)
        WHERE id = $1
        RETURNING *`,
@@ -99,7 +99,7 @@ const service = {
         id,
         description ?? null,
         data ?? null,
-        check ?? null,
+        done ?? null,
         position ?? null,
       ]
     );

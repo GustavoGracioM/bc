@@ -27,8 +27,8 @@ const controller = {
 
   async update(req, res) {
     const { id } = req.params;
-    const { data, check, position, description } = req.body
-    await service.updateById(id, { data, check, position, description })
+    const { data, done, position, description } = req.body
+    await service.updateById(id, { data, done, position, description })
     res.status(200).json({message: "updated"})
   }
 }
