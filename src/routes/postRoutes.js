@@ -13,9 +13,8 @@ router.post('/upload', upload.single('imagem'), async (req, res) => {
     if (!req.file) {
       return res.status(400).json({ error: 'Nenhum arquivo enviado.' });
     }
-    console.log(req)
     // Retorna só o caminho da imagem (que o frontend vai usar depois)
-    res.status(200).json({ path: `/uploads/${req.file.path}` });
+    res.status(200).json({ path: req.file.path });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
