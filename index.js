@@ -24,7 +24,7 @@ app.use('/', reelRoutes);
 app.post("/auth/login", (req, res) => {
   const { password } = req.body;
 
-  if (password !== process.env.SITE_PASSWORD) {
+  if (password !== process.env.PASSWORD_FRONT) {
     return res.status(401).json({ error: "Senha incorreta" });
   }
 
