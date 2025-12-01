@@ -18,7 +18,36 @@ app.use('/upload-vids',express.static(path.join(__dirname, 'src', 'uploads-vids'
 
 app.use('/', postRoutes);
 app.use('/', todoRoutes);
-app.use('/', reelRoutes)
+app.use('/', reelRoutes);
+
+// LOGIN
+app.post("/auth/login", (req, res) => {
+  const { password } = req.body;
+
+  if (password !== process.env.SITE_PASSWORD) {
+    return res.status(401).json({ error: "Senha incorreta" });
+  }
+
+  const token = jwt.sign(
+    { authenticated: true },
+    process.env.JWT_SECRET,
+    { expiresIn: process.env.JWT_EXPIRES_IN }
+  );
+
+  return res.json({ token });
+});
+
+// VALIDAR TOKEN
+app.post("/auth/validate", (req, res) => {
+  const { token } = req.body;
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    res.json({ valid: true });
+  } catch {
+    res.json({ valid: false });
+  }
+});
 
 app.listen(PORT, () => {
   console.log(`Servidor rodando em http://localhost:${PORT}`);
